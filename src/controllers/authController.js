@@ -2,13 +2,14 @@ import User from "../models/User.js";
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import logger from "../utils/logger.js";
+import { redisClient } from "../config/redis.js";
 
 
 export const register = async (req, res, next) => {
     try {
       const { name, email, password } = req.body;
   
-      // Validation
+      
       if (!name || !email || !password) {
         return res.status(400).json({
           success: false,
@@ -16,7 +17,7 @@ export const register = async (req, res, next) => {
         });
       }
   
-      // Check existing user
+      
       const existingUser = await User.findOne({ email });
   
       if (existingUser) {
@@ -24,10 +25,9 @@ export const register = async (req, res, next) => {
         throw new Error("User already exists");
       }
   
-      // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
   
-      // Create user
+      
       const user = await User.create({
         name,
         email,
@@ -44,10 +44,13 @@ export const register = async (req, res, next) => {
       next(error);
     }
   };
+
   
   export const login = async (req, res, next) => {
     try {
       const { email, password } = req.body;
+
+      
   
       if (!email || !password) {
         return res.status(400).json({
@@ -55,20 +58,34 @@ export const register = async (req, res, next) => {
           message: "Insufficient details",
         });
       }
+
+
+      const loginKey = `login_attempt:${email}`;
+
+      const attempts = await redisClient.get(loginKey)
+
+      if(attempts && parseInt(attempts) >= 5) {
+        res.status(429)
+        throw new Error("too many login attempts. Try again later.")
+      }
   
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email: email.toLowerCase() });
   
       if (!user) {
-        res.status(400);
-        throw new Error("User does not exist");
+        await increamentLoginAttempts(loginKey)
+        
+        throw new Error("invalid credentials");
       }
   
       const isMatch = await bcrypt.compare(password, user.password);
   
       if (!isMatch) {
+        await increamentLoginAttempts(loginKey)
         res.status(400);
         throw new Error("Invalid credentials");
       }
+
+      await redisClient.del(loginKey)
   
       const token = jwt.sign(
         { id: user._id, role: user.role },
@@ -87,3 +104,13 @@ export const register = async (req, res, next) => {
     }
   };
   
+
+  
+  const increamentLoginAttempts = async(key) => {
+    const attempts = await redisClient.incr(key);
+
+    if(attempts === 1) {
+        await redisClient.expire(key , 60)
+    }
+  }
+

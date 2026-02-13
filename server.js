@@ -2,6 +2,7 @@ import express from 'express'
 import dotenv from "dotenv"
 import cors from "cors"
 import morgan from "morgan"
+import authRoutes from "./src/routes/authRoutes.js"
 
 
 import connectDb from './src/config/db.js'
@@ -24,6 +25,7 @@ connectRedis()
 app.use(cors())
 app.use(express.json())
 app.use(morgan("dev"))
+app.use("/api/auth" , authRoutes)
 
 
 app.get("/health" , (req , res) => {

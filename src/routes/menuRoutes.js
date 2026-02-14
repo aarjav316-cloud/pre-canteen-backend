@@ -3,6 +3,7 @@ import {
     addMenuItems, 
     deleteMenu, 
     getAllMenu,
+    getMenuStats,
     searchMenu,
     toggleAvailability,
     updatedMenu
@@ -23,5 +24,6 @@ router.delete("/:id" , protect , authorizeRoles("admin") , deleteMenu)
 router.patch("/:id/toggle" , protect , authorizeRoles("admin") , toggleAvailability)
 
 
+router.get("/stats" , protect , authorizeRoles("admin") , getMenuStats)
 
-export default router
+export default router;

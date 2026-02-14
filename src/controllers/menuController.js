@@ -192,4 +192,32 @@ export const toggleAvailability = async (req,res,next) => {
     }
 }
 
+export const getMenuStats = async (req,res,next) => {
+    try {
+
+        const stats = Menu.aggregate([
+            {
+                $group:{
+
+                    _id: "$category",
+                    totalItems: {$sum:1},
+                    averagePrice: {$avg: "$price"},
+
+                },
+            },
+            {
+                $sort: {totalItems: -1}
+            },
+        ]);
+
+
+        return res.json({
+            success:true,
+            data:stats,
+        })
+        
+    } catch (error) {
+        next(error)
+    }
+}
 

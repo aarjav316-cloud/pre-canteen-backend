@@ -109,4 +109,87 @@ export const searchMenu = async (req,res,next) => {
     }
 }
 
+export const updatedMenu = async (req,res,next) => {
+    try {
+
+        const {id} = req.params;
+
+        const update = Menu.findByIdAndUpdate(
+            id,
+            req.body,
+            {new:true , runValidators:true }
+        )
+
+        if(!update){
+           throw new Error("Menu item not found")
+        }
+
+        await redisClient.del("menu:all")
+
+        return res.json({
+            success:true,
+            message:"Menu updated",
+            data: update
+        })
+        
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const deleteMenu = async (req,res,next) => {
+    try {
+
+        const {id} = req.params;
+
+        const menu = await Menu.findById(id)
+
+        if(!menu){
+            throw new Error("menu not found")
+        }
+
+        await menu.deleteOne();
+
+        await redisClient.del("menu:all")
+
+        return res.json({
+            success:true,
+            message:"Menu item deleted",
+        });
+        
+    } catch (error) {
+        next(error)
+    }
+}
+
+
+export const toggleAvailability = async (req,res,next) => {
+    try {
+
+        const {id} = req.params;
+
+        const menu = await Menu.findById(id);
+
+        if(!menu){
+            throw new Error("menu item not found")
+        }
+
+        menu.isAvailable = !menu.isAvailable;
+
+        await menu.save();
+
+        await redisClient.del("menu:all")
+
+
+        return res.json({
+            success:true,
+            message:"availabilty updated",
+            data:menu
+        })
+        
+    } catch (error) {
+        next(error)
+    }
+}
+
 

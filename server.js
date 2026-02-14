@@ -9,6 +9,7 @@ import connectDb from './src/config/db.js'
 import { connectRedis } from './src/config/redis.js'
 import errorHandler from './src/middleware/errorMiddleware.js'
 import logger from './src/utils/logger.js'
+import menuRoutes from "./src/routes/menuRoutes.js"
 
 
 dotenv.config()
@@ -25,7 +26,10 @@ connectRedis()
 app.use(cors())
 app.use(express.json())
 app.use(morgan("dev"))
+
+
 app.use("/api/auth" , authRoutes)
+app.use("/api/menu" , menuRoutes)
 
 
 app.get("/health" , (req , res) => {

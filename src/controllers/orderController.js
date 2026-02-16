@@ -10,6 +10,7 @@ const generatePickupCode = () => {
 
 // ================= CREATE ORDER =================
 export const createOrder = async (req, res, next) => {
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -34,6 +35,7 @@ export const createOrder = async (req, res, next) => {
     let totalAmount = 0;
 
     for (let item of menuItems) {
+      
       const quantity = Number(cartItems[item._id]);
 
       orderItems.push({
@@ -80,5 +82,3 @@ export const createOrder = async (req, res, next) => {
     next(error);
   }
 };
-
-

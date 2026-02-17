@@ -39,7 +39,7 @@ export const addMenuItems = async (req,res,next) => {
 export const getAllMenu = async (req,res,next)  => {
     try {
 
-        const cachedMenu = await redisClient.get("menua:all");
+        const cachedMenu = await redisClient.get("menu:all");
 
         if(cachedMenu){
             return res.json({

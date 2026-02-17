@@ -27,3 +27,11 @@ router.patch("/:id/toggle" , protect , authorizeRoles("admin") , toggleAvailabil
 router.get("/stats" , protect , authorizeRoles("admin") , getMenuStats)
 
 export default router;
+
+
+
+
+
+
+
+

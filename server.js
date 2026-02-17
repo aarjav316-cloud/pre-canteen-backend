@@ -10,6 +10,7 @@ import { connectRedis } from './src/config/redis.js'
 import errorHandler from './src/middleware/errorMiddleware.js'
 import logger from './src/utils/logger.js'
 import menuRoutes from "./src/routes/menuRoutes.js"
+import orderRoutes from "./src/routes/orderRoute.js"
 
 
 dotenv.config()
@@ -30,6 +31,7 @@ app.use(morgan("dev"))
 
 app.use("/api/auth" , authRoutes)
 app.use("/api/menu" , menuRoutes)
+app.use("/api/orders" , orderRoutes)
 
 
 app.get("/health" , (req , res) => {
@@ -57,3 +59,5 @@ process.on("SIGINT", async () => {
       process.exit(0);
     });
 });
+
+

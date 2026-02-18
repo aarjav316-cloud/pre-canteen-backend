@@ -24,6 +24,6 @@ router.post("/:orderId/verify", protect, authorizeRoles("staff"), verifyPickUpCo
 
 
 
-export default router
+export default router;
 
 

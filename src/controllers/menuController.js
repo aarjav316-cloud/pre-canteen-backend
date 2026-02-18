@@ -114,7 +114,7 @@ export const updatedMenu = async (req,res,next) => {
 
         const {id} = req.params;
 
-        const update = Menu.findByIdAndUpdate(
+        const update =  await Menu.findByIdAndUpdate(
             id,
             req.body,
             {new:true , runValidators:true }
@@ -195,7 +195,7 @@ export const toggleAvailability = async (req,res,next) => {
 export const getMenuStats = async (req,res,next) => {
     try {
 
-        const stats = Menu.aggregate([
+        const stats =  await Menu.aggregate([
             {
                 $group:{
 

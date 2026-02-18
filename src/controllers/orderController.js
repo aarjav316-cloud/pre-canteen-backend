@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { redisClient } from "../config/redis.js";
 import Order from "../models/Order.js";
@@ -8,92 +7,75 @@ const generatePickupCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-
-export const createOrder = async (req,res , next) => {
-  const session = await mongoose.startSession()
-  session.startTransaction()
-
+export const createOrder = async (req, res, next) => {
   try {
 
     const userId = req.user._id.toString();
-    const cartKey = `cart:${userId}`
+    const cartKey = `cart:${userId}`;
 
-    const cartItems = await redisClient.hGetAll(cartKey)
+    const cartItems = await redisClient.hGetAll(cartKey);
 
-    if(Object.keys(cartItems).length === 0){
+    if (Object.keys(cartItems).length === 0) {
       res.status(400);
-      throw new Error("cart is empty")
+      throw new Error("Cart is empty");
     }
 
-    const menuIds = Object.keys(cartItems)
+    const menuIds = Object.keys(cartItems);
 
     const menuItems = await Menu.find({
-       _id: {$in:menuIds},
-    }).session(session);
+      _id: { $in: menuIds },
+    });
 
-    let orderItems = []
+    let orderItems = [];
     let totalAmount = 0;
 
-    for (let item of menuItems){
+    for (let item of menuItems) {
 
-      const quantity = Number(cartItems[item._id])
+      const quantity = Number(cartItems[item._id]);
 
       orderItems.push({
         menu: item._id,
         name: item.name,
         price: item.price,
-        quantity
+        quantity,
       });
 
       totalAmount += item.price * quantity;
     }
 
-    const plainPickUpCode = generatePickupCode()
-
-    const hashedPickUpCode = await bcrypt.hash(plainPickUpCode , 10)
+    const plainPickUpCode = generatePickupCode();
+    const hashedPickUpCode = await bcrypt.hash(plainPickUpCode, 10);
 
     const existingOrder = await Order.findOne({
       user: userId,
       status: { $in: ["pending", "paid", "preparing", "ready"] },
     });
-    
+
     if (existingOrder) {
       res.status(400);
       throw new Error("You already have an active order");
     }
-    
 
-    const order = await Order.create(
-      [
-        {
-          user: userId,
-          items:orderItems,
-          totalAmount,
-          pickupCode: hashedPickUpCode
-        },
-      ],
-      {session}
-    );
+    const order = await Order.create({
+      user: userId,
+      items: orderItems,
+      totalAmount,
+      pickupCode: hashedPickUpCode,
+    });
 
-    await session.commitTransaction();
-    session.endSession()
-
-    await redisClient.del(cartKey)
+    await redisClient.del(cartKey);
 
     res.status(201).json({
-      success:true,
-      message: "Order created Successfully",
-      orderId: order[0]._id,
-      pickupCode: plainPickUpCode
-    })
-    
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    next(error)
-  }
-}
+      success: true,
+      message: "Order created successfully",
+      orderId: order._id,
+      pickupCode: plainPickUpCode,
+    });
 
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const updateOrderStatus = async (req, res, next) => {
   try {
@@ -138,7 +120,7 @@ export const verifyPickUpCode = async (req,res,next) => {
 
     if(order.status !== "ready"){
       res.status(400);
-      order.pickupCode
+      throw new Error("Order is not ready for pickup");
     }
 
     const isMatch = await bcrypt.compare(

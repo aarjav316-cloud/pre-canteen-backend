@@ -6,32 +6,36 @@ const CART_TTL = 60*30;
 
 export const addToCart = async (req,res,next) => {
     try {
-
-        const userId  = req.query._id.toString();
-        const {menuId , quantity} = req.body;
-
-
-        if(!menuId || !quantity){
-            res.status(400);
-            throw new Error("menuId and quantity required")
-        }
-
-        const cartKey = `cart:${userId}`
-
-        await redisClient.hIncrBy(cartKey , menuId , quantity);
-
-        await redisClient.expire(cartKey , CART_TTL)
-
-        return res.json({
-            success:true,
-            message:"item added to cart"
-        })
-        
+      const userId = req.user._id.toString();
+      const { menuId, quantity } = req.body;
+  
+      if (!menuId || !quantity) {
+        res.status(400);
+        throw new Error("menuId and quantity required");
+      }
+  
+      const menuItem = await Menu.findById(menuId);
+  
+      if (!menuItem || !menuItem.isAvailable) {
+        res.status(404);
+        throw new Error("Menu item not available");
+      }
+  
+      const cartKey = `cart:${userId}`;
+  
+      await redisClient.hIncrBy(cartKey, menuId, Number(quantity));
+      await redisClient.expire(cartKey, CART_TTL);
+  
+      res.json({
+        success: true,
+        message: "Item added to cart"
+      });
+  
     } catch (error) {
-        next(error)
+      next(error);
     }
-}
-
+  };
+  
 
 export const getCart = async (req,res,next) => {
     try {
@@ -56,7 +60,7 @@ export const getCart = async (req,res,next) => {
         }))
 
         const grandTotal = formattedCart.reduce(
-            (sum , item) = sum + item.total,
+            (sum , item) => sum + item.total,
             0
         );
 
@@ -97,7 +101,6 @@ export const clearCart = async (req,res,next) => {
     try {
 
         const userId = req.user._id.toString();
-        const menuId = req.body;
 
         const cartKey = `cart:${userId}`
 
@@ -112,3 +115,9 @@ export const clearCart = async (req,res,next) => {
         next(error)
     }
 }
+
+
+
+
+
+

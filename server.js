@@ -11,6 +11,7 @@ import errorHandler from './src/middleware/errorMiddleware.js'
 import logger from './src/utils/logger.js'
 import menuRoutes from "./src/routes/menuRoutes.js"
 import orderRoutes from "./src/routes/orderRoute.js"
+import cartRoutes from "./src/routes/cartRoutes.js"
 
 
 dotenv.config()
@@ -32,6 +33,7 @@ app.use(morgan("dev"))
 app.use("/api/auth" , authRoutes)
 app.use("/api/menu" , menuRoutes)
 app.use("/api/orders" , orderRoutes)
+app.use("/api/cart", cartRoutes)
 
 
 app.get("/health" , (req , res) => {

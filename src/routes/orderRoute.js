@@ -3,7 +3,9 @@ import { createOrder ,
     getMyOrders ,
     getAllOrders , 
     updateOrderStatus , 
-    verifyPickUpCode
+    verifyPickUpCode,
+    createPayment,
+    verifyPayment
 } from '../controllers/orderController.js'
 
 import { protect , authorizeRoles } from '../middleware/authMiddleware.js'
@@ -21,6 +23,10 @@ router.patch("/:orderId/status", protect, authorizeRoles("admin", "staff"), upda
 
 // Staff
 router.post("/:orderId/verify", protect, authorizeRoles("staff"), verifyPickUpCode);
+
+
+router.post("/:orderId/pay" , protect , authorizeRoles("student") , createPayment )
+router.post("/verify-payment" , protect , verifyPayment)
 
 
 

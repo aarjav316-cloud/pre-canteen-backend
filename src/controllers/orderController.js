@@ -1,7 +1,11 @@
 import bcrypt from "bcryptjs";
 import { redisClient } from "../config/redis.js";
+
 import Order from "../models/Order.js";
 import Menu from "../models/Menu.js";
+
+import razorpay from "../config/razorpay.js";
+import crypto from "crypto"
 
 const generatePickupCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -182,5 +186,104 @@ export const getAllOrders = async(req , res , next) => {
     next(error)
    }
 }
+
+
+export const createPayment = async (req,res,next) => {
+  try {
+
+    const {orderId} = req.params;
+
+    if(!orderId){
+      throw new Error("order not found")
+    }
+
+    const order = await Order.findById(orderId)
+
+    if(!order){
+      throw new Error("order not found")
+    }
+
+    if(order.isPaid){
+      throw new Error("already paid for this item")
+    }
+
+    const options = {
+      amount: order.totalAmount * 100,
+      currency: "INR",
+      receipt: order._id.toString(),
+    }
+
+    const razorPayOrder = await razorpay.orders.create(options);
+
+    order.razorpayOrderId = razorPayOrder.id;
+
+    res.json({
+      success: true,
+      razorpayOrderId: razorpayOrder.id,
+      key: process.env.RAZORPAY_KEY_ID,
+      amount: options.amount,
+    });
+
+    await order.save()
+    
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+
+
+export const verifyPayment = async (req, res, next) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .digest("hex");
+
+    if (generatedSignature !== razorpay_signature) {
+      res.status(400);
+      throw new Error("Payment verification failed");
+    }
+
+    const order = await Order.findOne({
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    if (!order) {
+      res.status(404);
+      throw new Error("Order not found");
+    }
+
+    if (order.isPaid) {
+      return res.json({
+        success: true,
+        message: "Payment already verified",
+      });
+    }
+
+    order.isPaid = true;
+    order.status = "paid";
+    order.razorpayPaymentId = razorpay_payment_id;
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Payment verified successfully",
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 

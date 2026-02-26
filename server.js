@@ -16,6 +16,9 @@ import cartRoutes from "./src/routes/cartRoutes.js";
 import errorHandler from "./src/middleware/errorMiddleware.js";
 import logger from "./src/utils/logger.js";
 
+import { initSocket } from "./src/config/socket.js";
+import { Socket } from "net";
+
 dotenv.config();
 
 const app = express();
@@ -53,8 +56,31 @@ const io = new Server(httpServer , {
         origin:"*",
     },
 })
-// (Socket logic will be added later)
 
+initSocket(io)
+
+
+io.on("connection" , (socket) => {
+
+    logger.info("Client connected: "  + socket.id)
+
+    socket.on("join_user_room" , (userId) => {
+        socket.join(`user_${userId}`);
+    })
+
+    socket.on("join_admin_dashboard" , () => {
+        socket.join("admin_dashboard")
+    })
+
+    socket.on("join_kitchen_room" , () => {
+        socket.join("kitchen_room")
+    })
+
+    socket.on("disconnect" , () => {
+        logger.warn("Client disconnected: " + socket.id)
+    })
+
+})
 /* -------------------- START SERVER SAFELY -------------------- */
 
 const startServer = async () => {
@@ -92,21 +118,6 @@ process.on("SIGTERM", () => {
     process.exit(0);
   });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

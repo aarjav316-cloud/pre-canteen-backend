@@ -3,6 +3,7 @@ import { redisClient } from "../config/redis.js";
 
 import Order from "../models/Order.js";
 import Menu from "../models/Menu.js";
+import { getIo } from "../config/socket.js";
 
 import razorpay from "../config/razorpay.js";
 import crypto from "crypto"
@@ -69,6 +70,20 @@ export const createOrder = async (req, res, next) => {
 
     await redisClient.del(cartKey);
 
+    const io = getIo();
+
+    
+    io.to("kitchen_room").emit("new_order", {
+      orderId: order._id,
+      totalAmount,
+    });
+    
+    
+    io.to("admin_dashboard").emit("new_order", {
+      orderId: order._id,
+      totalAmount,
+    });
+
     res.status(201).json({
       success: true,
       message: "Order created successfully",
@@ -96,6 +111,19 @@ export const updateOrderStatus = async (req, res, next) => {
 
    order.status = status;
    await order.save();
+
+
+   const io = getIo()
+
+   io.to(`user_${order.user}`).emit("order_status_updated" , {
+      orderId: order._id,
+      status: order.status,
+   })
+
+   io.to("admin_dashboard").emit("order_status_updated" , {
+     orderId: order._id,
+     status: order.status,
+   } )
 
    res.json({
     success:true,
@@ -273,6 +301,16 @@ export const verifyPayment = async (req, res, next) => {
     order.razorpayPaymentId = razorpay_payment_id;
 
     await order.save();
+
+    const io = getIo()
+
+    io.to(`user_${order.user}`).emit("payment_success" ,{
+      orderId: order._id,
+    })
+
+    io.to("admin_dashboard").emit("payment_success"  , {
+      orderId: order.id,
+    })
 
     res.json({
       success: true,

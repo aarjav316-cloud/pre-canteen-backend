@@ -5,7 +5,11 @@ import { createOrder ,
     updateOrderStatus , 
     verifyPickUpCode,
     createPayment,
-    verifyPayment
+    verifyPayment,
+    getRevenueByDay,
+    getRevenueByMonth,
+    getTopSellingItems,
+    getOrderStatusSummary
 } from '../controllers/orderController.js'
 
 import { protect , authorizeRoles } from '../middleware/authMiddleware.js'
@@ -28,6 +32,11 @@ router.post("/:orderId/verify", protect, authorizeRoles("staff"), verifyPickUpCo
 router.post("/:orderId/pay" , protect , authorizeRoles("student") , createPayment )
 router.post("/verify-payment" , protect , verifyPayment)
 
+
+router.get("/analytics/revenue-day",protect,authorizeRoles("admin"),getRevenueByDay)
+router.get("/analytics/revenue-month",protect,authorizeRoles("admin"),getRevenueByMonth)
+router.get("/analytics/top-items",protect,authorizeRoles("admin"), getTopSellingItems)
+router.get("/analytics/status-summary",protect,authorizeRoles("admin"),getOrderStatusSummary)
 
 
 export default router;

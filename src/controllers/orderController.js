@@ -7,6 +7,7 @@ import { getIo } from "../config/socket.js";
 
 import razorpay from "../config/razorpay.js";
 import crypto from "crypto"
+import { trace } from "console";
 
 const generatePickupCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -261,7 +262,6 @@ export const createPayment = async (req,res,next) => {
 
 
 
-
 export const verifyPayment = async (req, res, next) => {
   try {
     const {
@@ -323,5 +323,131 @@ export const verifyPayment = async (req, res, next) => {
 };
 
 
+export const getRevenueByDay = async (req , res , next)=> {
+  try {
+
+    const revenue = await Order.aggregate([
+      {
+        $match : {status:"completed"},
+      },
+      {
+        $group: {
+          _id:{
+            year: {$year: "$createdAt"},
+            month:{$month: "$createdAt"},
+            day:{$dayOfMonth: "$createdAt"},
+          },
+          totalRevenue:{$sum: "$totalAmount"},
+          totalOrders:{$sum:1},
+        },
+      },
+      {
+        $sort: {"_id.year":1,"_id.month":1,"_id.day":1},
+      }
+    ]);
+
+    return res.json({
+      success:true,
+      data:revenue
+    })
+    
+  } catch (error) {
+    next(error)
+  }
+}
 
 
+
+export const getRevenueByMonth = async (req,res,next) => {
+  try {
+
+    const revenue = await Order.aggregate([
+      {
+        $match:{status:"completed"},
+      },
+      {
+        $group:{
+          _id:{
+            year:{$year:"$createdAt"},
+            month:{$month:"$createdAt"},
+          },
+          totalRevenue:{$sum:"$totalAmount"},
+          totalOrders:{$sum:1},
+        },
+      },
+      {
+        $sort:{"_id.year":1, "_id.month":1},
+      },
+    ]);
+
+    return res.json({
+      success:true,
+      data:revenue
+    })
+    
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+
+export const getTopSellingItems = async(req,res,next) => {
+  try {
+
+    const items = await Order.aggregate([
+       { $match: { status:"completed"} },
+       {$unwind: "$items"},
+
+       {
+         $group: {
+           _id:"$items.name",
+           totalSold:{$sum:"$items.quantity"},
+           revenue: {
+             $sum: {
+               $multiply:["$items.price" , "$items.quantity"],
+             },
+           },
+         },
+       },
+
+       {$sort: {totalSold:-1}},
+
+       {$limit:5}
+    ])
+
+    res.json({
+      success: true,
+      data: items,
+    });
+
+    
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+
+
+
+export const getOrderStatusSummary = async (req, res, next) => {
+  try {
+    const summary = await Order.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      data: summary,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,65 +1,113 @@
-import express from 'express'
-import dotenv from "dotenv"
-import cors from "cors"
-import morgan from "morgan"
-import authRoutes from "./src/routes/authRoutes.js"
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import morgan from "morgan";
+import http from "http";
+import { Server } from "socket.io";
 
+import connectDb from "./src/config/db.js";
+import { connectRedis } from "./src/config/redis.js";
 
-import connectDb from './src/config/db.js'
-import { connectRedis } from './src/config/redis.js'
-import errorHandler from './src/middleware/errorMiddleware.js'
-import logger from './src/utils/logger.js'
-import menuRoutes from "./src/routes/menuRoutes.js"
-import orderRoutes from "./src/routes/orderRoute.js"
-import cartRoutes from "./src/routes/cartRoutes.js"
+import authRoutes from "./src/routes/authRoutes.js";
+import menuRoutes from "./src/routes/menuRoutes.js";
+import orderRoutes from "./src/routes/orderRoute.js";
+import cartRoutes from "./src/routes/cartRoutes.js";
 
+import errorHandler from "./src/middleware/errorMiddleware.js";
+import logger from "./src/utils/logger.js";
 
-dotenv.config()
-
+dotenv.config();
 
 const app = express();
-
-
-connectDb()
-connectRedis()
-
-
-
-app.use(cors())
-app.use(express.json())
-app.use(morgan("dev"))
-
-
-app.use("/api/auth" , authRoutes)
-app.use("/api/menu" , menuRoutes)
-app.use("/api/orders" , orderRoutes)
-app.use("/api/cart", cartRoutes)
-
-
-app.get("/health" , (req , res) => {
-    res.status(200).json({
-        success:true,
-        message:"Server running properly"
-    });
-});
-
-app.use(errorHandler);
-
-
 const PORT = process.env.PORT || 5000;
 
 
-const server = app.listen(  process.env.PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
+
+app.use(cors());
+app.use(express.json());
+app.use(morgan("dev"));
+
+
+
+app.use("/api/auth", authRoutes);
+app.use("/api/menu", menuRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/cart", cartRoutes);
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Server running properly",
+  });
 });
 
 
-process.on("SIGINT", async () => {
-    logger.warn("Shutting down server...");
-    server.close(() => {
-      logger.info("Server closed.");
-      process.exit(0);
+app.use(errorHandler);
+
+/* -------------------- HTTP + SOCKET -------------------- */
+
+const httpServer = http.createServer(app)
+
+const io = new Server(httpServer , {
+    cors: {
+        origin:"*",
+    },
+})
+// (Socket logic will be added later)
+
+/* -------------------- START SERVER SAFELY -------------------- */
+
+const startServer = async () => {
+  try {
+    await connectDb();
+    await connectRedis();
+
+    httpServer.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
     });
+  } catch (error) {
+    logger.error("Failed to start server: " + error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+
+
+process.on("SIGINT", () => {
+  logger.warn("Shutting down server...");
+
+  httpServer.close(() => {
+    logger.info("Server closed.");
+    process.exit(0);
+  });
 });
+
+process.on("SIGTERM", () => {
+  logger.warn("SIGTERM received. Closing server...");
+
+  httpServer.close(() => {
+    logger.info("Server terminated.");
+    process.exit(0);
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -202,9 +202,11 @@ export const getAllOrders = async(req , res , next) => {
    try {
 
     const orders = await Order.find()
-    .populate('user' , "name email")
-    .sort({createdAt: -1})
-
+    .select("-pickupCode")
+    .populate("user" , "name email")
+    .sort({createdAt:-1})
+    .lean()
+    
 
     res.json({
       success:true,

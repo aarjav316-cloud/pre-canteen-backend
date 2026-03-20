@@ -7,7 +7,8 @@ import { Server } from "socket.io";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 
-
+import swaggerSpec from "./src/config/swagger.js";
+import swaggerUi from "swagger-ui-express"
 
 import connectDb from "./src/config/db.js";
 import { connectRedis } from "./src/config/redis.js";
@@ -39,6 +40,7 @@ app.use(morgan("dev"));
 app.use(helmet())
 app.use(mongoSanitize());
 
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/menu", menuRoutes);

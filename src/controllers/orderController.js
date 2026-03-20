@@ -7,7 +7,6 @@ import { getIo } from "../config/socket.js";
 
 import razorpay from "../config/razorpay.js";
 import crypto from "crypto"
-import { trace } from "console";
 
 const generatePickupCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();

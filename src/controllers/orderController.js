@@ -6,7 +6,7 @@ import Menu from "../models/Menu.js";
 import { getIo } from "../config/socket.js";
 
 import razorpay from "../config/razorpay.js";
-import crypto from "crypto"
+import crypto from "crypto";
 
 const generatePickupCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -14,7 +14,6 @@ const generatePickupCode = () => {
 
 export const createOrder = async (req, res, next) => {
   try {
-
     const userId = req.user._id.toString();
     const cartKey = `cart:${userId}`;
 
@@ -35,7 +34,6 @@ export const createOrder = async (req, res, next) => {
     let totalAmount = 0;
 
     for (let item of menuItems) {
-
       const quantity = Number(cartItems[item._id]);
 
       orderItems.push({
@@ -66,19 +64,18 @@ export const createOrder = async (req, res, next) => {
       items: orderItems,
       totalAmount,
       pickupCode: hashedPickUpCode,
+      pickupCodePlain: plainPickUpCode,
     });
 
     await redisClient.del(cartKey);
 
     const io = getIo();
 
-    
     io.to("kitchen_room").emit("new_order", {
       orderId: order._id,
       totalAmount,
     });
-    
-    
+
     io.to("admin_dashboard").emit("new_order", {
       orderId: order._id,
       totalAmount,
@@ -90,7 +87,6 @@ export const createOrder = async (req, res, next) => {
       orderId: order._id,
       pickupCode: plainPickUpCode,
     });
-
   } catch (error) {
     next(error);
   }
@@ -98,150 +94,138 @@ export const createOrder = async (req, res, next) => {
 
 export const updateOrderStatus = async (req, res, next) => {
   try {
+    const { orderId } = req.params;
+    const { status } = req.body;
 
-   const {orderId} = req.params;
-   const {status} = req.body;
+    const order = await Order.findById(orderId);
 
-   const order = await Order.findById(orderId)
+    if (!order) {
+      res.status(404);
+      throw new Error("Order not found");
+    }
 
-   if(!order){
-    res.status(404)
-    throw new Error("Order not found")
-   }
+    order.status = status;
+    await order.save();
 
-   order.status = status;
-   await order.save();
+    const io = getIo();
 
-
-   const io = getIo()
-
-   io.to(`user_${order.user}`).emit("order_status_updated" , {
+    io.to(`user_${order.user}`).emit("order_status_updated", {
       orderId: order._id,
       status: order.status,
-   })
+    });
 
-   io.to("admin_dashboard").emit("order_status_updated" , {
-     orderId: order._id,
-     status: order.status,
-   } )
+    io.to("admin_dashboard").emit("order_status_updated", {
+      orderId: order._id,
+      status: order.status,
+    });
 
-   res.json({
-    success:true,
-    message:"order status updated",
-    data : order,
-   });
-
+    res.json({
+      success: true,
+      message: "order status updated",
+      data: order,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-
-export const verifyPickUpCode = async (req,res,next) => {
+export const verifyPickUpCode = async (req, res, next) => {
   try {
+    const { orderId } = req.params;
+    const { pickupCode } = req.body;
 
-    const {orderId} = req.params;
-    const {pickupCode} = req.body;
+    const order = await Order.findById(orderId);
 
-    const order = await Order.findById(orderId)
-
-    if(!order) {
+    if (!order) {
       res.status(404);
-      throw new Error("order not found")
+      throw new Error("order not found");
     }
 
-    if(order.status !== "ready"){
+    if (order.status !== "ready") {
       res.status(400);
       throw new Error("Order is not ready for pickup");
     }
 
-    const isMatch = await bcrypt.compare(
-      pickupCode,
-      order.pickupCode
-    );
+    const isMatch = await bcrypt.compare(pickupCode, order.pickupCode);
 
-    if(!isMatch){
+    if (!isMatch) {
       res.status(400);
-      throw new Error("Invalid pickup code")
+      throw new Error("Invalid pickup code");
     }
 
     order.status = "completed";
-    await order.save()
+    await order.save();
 
     res.json({
       success: true,
       message: "Order completed successfully",
     });
-    
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-
-export const getMyOrders = async (req,res,next) => {
+export const getMyOrders = async (req, res, next) => {
   try {
+    console.log("getMyOrders called for user:", req.user?._id);
 
     const orders = await Order.find({
-       user: req.user._id,
-    }).sort({createdAt: -1})
-
-    res.json({
-      success:true,
-      data:orders
-    });
-    
-  } catch (error) {
-    next(error)
-  }
-}
-
-
-export const getAllOrders = async(req , res , next) => {
-   try {
-
-    const orders = await Order.find()
-    .select("-pickupCode")
-    .populate("user" , "name email")
-    .sort({createdAt:-1})
-    .lean()
-    
-
-    res.json({
-      success:true,
-      data:orders
+      user: req.user._id,
     })
-    
-   } catch (error) {
-    next(error)
-   }
-}
+      .select("-pickupCode")
+      .sort({ createdAt: -1 });
 
+    console.log("Found orders:", orders.length);
 
-export const createPayment = async (req,res,next) => {
+    res.json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    console.error("getMyOrders error:", error);
+    next(error);
+  }
+};
+
+export const getAllOrders = async (req, res, next) => {
   try {
+    const orders = await Order.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const {orderId} = req.params;
+    res.json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-    if(!orderId){
-      throw new Error("order not found")
+export const createPayment = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      throw new Error("order not found");
     }
 
-    const order = await Order.findById(orderId)
+    const order = await Order.findById(orderId);
 
-    if(!order){
-      throw new Error("order not found")
+    if (!order) {
+      throw new Error("order not found");
     }
 
-    if(order.isPaid){
-      throw new Error("already paid for this item")
+    if (order.isPaid) {
+      throw new Error("already paid for this item");
     }
 
     const options = {
       amount: order.totalAmount * 100,
       currency: "INR",
       receipt: order._id.toString(),
-    }
+    };
 
     const razorPayOrder = await razorpay.orders.create(options);
 
@@ -254,22 +238,16 @@ export const createPayment = async (req,res,next) => {
       amount: options.amount,
     });
 
-    await order.save()
-    
+    await order.save();
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
-
-
+};
 
 export const verifyPayment = async (req, res, next) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
 
     const generatedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -303,134 +281,117 @@ export const verifyPayment = async (req, res, next) => {
 
     await order.save();
 
-    const io = getIo()
+    const io = getIo();
 
-    io.to(`user_${order.user}`).emit("payment_success" ,{
+    io.to(`user_${order.user}`).emit("payment_success", {
       orderId: order._id,
-    })
+    });
 
-    io.to("admin_dashboard").emit("payment_success"  , {
+    io.to("admin_dashboard").emit("payment_success", {
       orderId: order.id,
-    })
+    });
 
     res.json({
       success: true,
       message: "Payment verified successfully",
     });
-
   } catch (error) {
     next(error);
   }
 };
 
-
-export const getRevenueByDay = async (req , res , next)=> {
+export const getRevenueByDay = async (req, res, next) => {
   try {
-
     const revenue = await Order.aggregate([
       {
-        $match : {status:"completed"},
+        $match: { status: "completed" },
       },
       {
         $group: {
-          _id:{
-            year: {$year: "$createdAt"},
-            month:{$month: "$createdAt"},
-            day:{$dayOfMonth: "$createdAt"},
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            day: { $dayOfMonth: "$createdAt" },
           },
-          totalRevenue:{$sum: "$totalAmount"},
-          totalOrders:{$sum:1},
+          totalRevenue: { $sum: "$totalAmount" },
+          totalOrders: { $sum: 1 },
         },
       },
       {
-        $sort: {"_id.year":1,"_id.month":1,"_id.day":1},
-      }
+        $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 },
+      },
     ]);
 
     return res.json({
-      success:true,
-      data:revenue
-    })
-    
+      success: true,
+      data: revenue,
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-
-
-export const getRevenueByMonth = async (req,res,next) => {
+export const getRevenueByMonth = async (req, res, next) => {
   try {
-
     const revenue = await Order.aggregate([
       {
-        $match:{status:"completed"},
+        $match: { status: "completed" },
       },
       {
-        $group:{
-          _id:{
-            year:{$year:"$createdAt"},
-            month:{$month:"$createdAt"},
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
           },
-          totalRevenue:{$sum:"$totalAmount"},
-          totalOrders:{$sum:1},
+          totalRevenue: { $sum: "$totalAmount" },
+          totalOrders: { $sum: 1 },
         },
       },
       {
-        $sort:{"_id.year":1, "_id.month":1},
+        $sort: { "_id.year": 1, "_id.month": 1 },
       },
     ]);
 
     return res.json({
-      success:true,
-      data:revenue
-    })
-    
+      success: true,
+      data: revenue,
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-
-
-export const getTopSellingItems = async(req,res,next) => {
+export const getTopSellingItems = async (req, res, next) => {
   try {
-
     const items = await Order.aggregate([
-       { $match: { status:"completed"} },
-       {$unwind: "$items"},
+      { $match: { status: "completed" } },
+      { $unwind: "$items" },
 
-       {
-         $group: {
-           _id:"$items.name",
-           totalSold:{$sum:"$items.quantity"},
-           revenue: {
-             $sum: {
-               $multiply:["$items.price" , "$items.quantity"],
-             },
-           },
-         },
-       },
+      {
+        $group: {
+          _id: "$items.name",
+          totalSold: { $sum: "$items.quantity" },
+          revenue: {
+            $sum: {
+              $multiply: ["$items.price", "$items.quantity"],
+            },
+          },
+        },
+      },
 
-       {$sort: {totalSold:-1}},
+      { $sort: { totalSold: -1 } },
 
-       {$limit:5}
-    ])
+      { $limit: 5 },
+    ]);
 
     res.json({
       success: true,
       data: items,
     });
-
-    
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
-
-
-
-
+};
 
 export const getOrderStatusSummary = async (req, res, next) => {
   try {
@@ -447,7 +408,6 @@ export const getOrderStatusSummary = async (req, res, next) => {
       success: true,
       data: summary,
     });
-
   } catch (error) {
     next(error);
   }

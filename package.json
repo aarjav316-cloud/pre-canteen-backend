@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "create-admin": "node src/scripts/createAdmin.js",
+    "fix-orders": "node src/scripts/fixOrders.js"
   },
   "keywords": [],
   "author": "",

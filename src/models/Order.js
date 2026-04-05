@@ -1,81 +1,70 @@
 import mongoose from "mongoose";
 
-const orderSchema  = new mongoose.Schema({
-    user:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:"User",
-        required:true,
-        index:true
+const orderSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
 
     items: [
-        {
-            menu:{
-                type:mongoose.Schema.Types.ObjectId,
-                ref:"Menu",
-                required:true
-            },
-            name:String,
-            price:Number,
-            quantity:Number
+      {
+        menu: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Menu",
+          required: true,
         },
+        name: String,
+        price: Number,
+        quantity: Number,
+      },
     ],
 
     totalAmount: {
-        type:Number,
-        required:true
+      type: Number,
+      required: true,
     },
 
-    pickupCode:{
-        type:String,
-        required:true
+    pickupCode: {
+      type: String,
+      required: true,
     },
 
-    status:{
-        type:String,
-        enum: [
-            "pending",
-            "paid",
-            "preparing",
-            "ready",
-            "completed",
-            "cancelled",
-        ],
+    pickupCodePlain: {
+      type: String,
+    },
 
-        default:"pending",
-        index:true
+    status: {
+      type: String,
+      enum: ["pending", "paid", "preparing", "ready", "completed", "cancelled"],
+
+      default: "pending",
+      index: true,
     },
 
     razorpayOrderId: {
-        type:String,
+      type: String,
     },
 
     razorpayPaymentId: {
-        type:String,
+      type: String,
     },
 
-    isPaid:{
-        type:Boolean,
-        default:false,
+    isPaid: {
+      type: Boolean,
+      default: false,
     },
-},
- {timestamps:true}
+  },
+  { timestamps: true },
 );
 
+orderSchema.index({ user: 1, status: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ razorpayOrderId: 1 });
 
-orderSchema.index({user: 1, status:1})
-orderSchema.index({status:1, createdAt:-1})
-orderSchema.index({createdAt:-1})
-orderSchema.index({razorpayOrderId:1})
+const Order = mongoose.model("Order", orderSchema);
 
-const Order = mongoose.model("Order" , orderSchema);
-
-export default Order
-
-
-
-
-
-
-
-
+export default Order;

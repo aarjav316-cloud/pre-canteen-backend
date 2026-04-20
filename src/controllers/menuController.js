@@ -3,15 +3,12 @@ import { redisClient } from "../config/redis.js";
 
 export const addMenuItems = async (req,res,next) => {
     try {
-
-        const {price , category , name , description} = req.body;
+        const {price , category , name , description, image} = req.body;
 
         if(!price || !category || !name || !description){
             return res.json({
-
                 success:false,
                 message:"insufficient details"                  
-
             })
         }
 
@@ -19,10 +16,12 @@ export const addMenuItems = async (req,res,next) => {
             name,
             description,
             price,
-            category
+            category,
+            image
         })
 
         await redisClient.del("menu:all");
+        await redisClient.del("menu:admin_all");
 
         res.status(201).json({
             success:true,
@@ -38,8 +37,10 @@ export const addMenuItems = async (req,res,next) => {
 
 export const getAllMenu = async (req,res,next)  => {
     try {
+        const fetchAll = req.query.all === 'true';
+        const cacheKey = fetchAll ? "menu:admin_all" : "menu:all";
 
-        const cachedMenu = await redisClient.get("menu:all");
+        const cachedMenu = await redisClient.get(cacheKey);
 
         if(cachedMenu){
             return res.json({
@@ -49,9 +50,10 @@ export const getAllMenu = async (req,res,next)  => {
             })
         }
 
-        const menu = await Menu.find({isAvailable:true});
+        const query = fetchAll ? {} : {isAvailable:true};
+        const menu = await Menu.find(query);
 
-        await redisClient.set( "menu:all" , JSON.stringify(menu), {
+        await redisClient.set(cacheKey , JSON.stringify(menu), {
             EX:60,
         })
 
@@ -60,6 +62,7 @@ export const getAllMenu = async (req,res,next)  => {
             source:"database",
             data: menu,
         })
+
         
     } catch (error) {
         next(error)
@@ -124,7 +127,8 @@ export const updatedMenu = async (req,res,next) => {
            throw new Error("Menu item not found")
         }
 
-        await redisClient.del("menu:all")
+        await redisClient.del("menu:all");
+        await redisClient.del("menu:admin_all");
 
         return res.json({
             success:true,
@@ -142,15 +146,14 @@ export const deleteMenu = async (req,res,next) => {
 
         const {id} = req.params;
 
-        const menu = await Menu.findById(id)
+        const menu = await Menu.findByIdAndDelete(id);
 
         if(!menu){
-            throw new Error("menu not found")
+            throw new Error("menu not found");
         }
 
-        await menu.deleteOne();
-
-        await redisClient.del("menu:all")
+        await redisClient.del("menu:all");
+        await redisClient.del("menu:admin_all");
 
         return res.json({
             success:true,
@@ -178,7 +181,8 @@ export const toggleAvailability = async (req,res,next) => {
 
         await menu.save();
 
-        await redisClient.del("menu:all")
+        await redisClient.del("menu:all");
+        await redisClient.del("menu:admin_all");
 
 
         return res.json({

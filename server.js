@@ -7,8 +7,6 @@ import { Server } from "socket.io";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 
-import swaggerSpec from "./src/config/swagger.js";
-import swaggerUi from "swagger-ui-express";
 
 import connectDb from "./src/config/db.js";
 import { connectRedis } from "./src/config/redis.js";
@@ -17,6 +15,9 @@ import authRoutes from "./src/routes/authRoutes.js";
 import menuRoutes from "./src/routes/menuRoutes.js";
 import orderRoutes from "./src/routes/orderRoute.js";
 import cartRoutes from "./src/routes/cartRoutes.js";
+import settingsRoutes from "./src/routes/settingsRoutes.js";
+import walletRoutes from "./src/routes/walletRoutes.js";
+import notificationRoutes from "./src/routes/notificationRoutes.js";
 
 import errorHandler from "./src/middleware/errorMiddleware.js";
 import logger from "./src/utils/logger.js";
@@ -31,11 +32,16 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
+    origin: [
+      "http://localhost:5173",
+      "http://192.168.1.192:5173",
+      process.env.CLIENT_URL,
+    ].filter(Boolean),
     credentials: true,
   }),
 );
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(morgan("dev"));
 app.use(helmet());
 // Disabled mongoSanitize due to Express v5 compatibility issues
@@ -48,12 +54,14 @@ app.use(helmet());
 //   }),
 // );
 
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -135,3 +143,4 @@ process.on("SIGTERM", () => {
     process.exit(0);
   });
 });
+

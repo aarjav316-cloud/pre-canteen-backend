@@ -13,6 +13,10 @@ const menuSchema = new mongoose.Schema({
         required:true,
         trim:true
     },
+    image: {
+        type: String,
+        default: ""
+    },
     price:{
         type:Number,
         required:true,
@@ -21,7 +25,6 @@ const menuSchema = new mongoose.Schema({
     category:{
         type:String,
         required:true,
-        enum:["breakfast" , "lunch" , "dinner" , "snacks" , "beverages"],
         index:true
     },
     isAvailable: {

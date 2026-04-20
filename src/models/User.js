@@ -24,6 +24,27 @@ const userSchema = new mongoose.Schema({
         type:String,
         enum:["student","admin","staff"],
         default:"student"
+    },
+    dp: {
+        type: String,
+        default: ""
+    },
+    college: {
+        type: String,
+        default: "SRM Institute of Science and Technology"
+    },
+    mobile: {
+        type: String,
+        default: ""
+    },
+    notificationPreferences: {
+        orderUpdates: { type: Boolean, default: true },
+        promotions: { type: Boolean, default: true },
+        menuReminders: { type: Boolean, default: true }
+    },
+    walletBalance: {
+        type: Number,
+        default: 0
     }
 },
 {timestamps:true}

@@ -19,30 +19,24 @@ passport.use(
         const googleId = profile.id;
         const name = profile.displayName;
 
-        // 1. Check if user exists with this Google ID
         let user = await User.findOne({ googleId });
         if (user) {
-          // Block admin/staff from using Google OAuth
           if (user.role !== "student") {
             return done(null, false, { message: "Google login is only available for students." });
           }
           return done(null, user);
         }
 
-        // 2. Check if user exists with this email (local account)
         user = await User.findOne({ email });
         if (user) {
-          // Block admin/staff from linking Google to their accounts
           if (user.role !== "student") {
             return done(null, false, { message: "Google login is only available for students." });
           }
-          // Link Google account to existing student account
           user.googleId = googleId;
           await user.save();
           return done(null, user);
         }
 
-        // 3. New user → always create as student
         user = await User.create({
           name,
           email,

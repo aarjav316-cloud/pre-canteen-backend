@@ -4,7 +4,6 @@ import Transaction from "../models/Transaction.js";
 import Notification from "../models/Notification.js";
 import razorpay from "../config/razorpay.js";
 
-// Direct add (testing only — no payment gateway)
 export const addMoney = async (req, res, next) => {
     try {
         const { amount } = req.body;
@@ -25,7 +24,6 @@ export const addMoney = async (req, res, next) => {
     } catch (error) { next(error); }
 };
 
-// Step 1 — Create a Razorpay order for wallet top-up
 export const createWalletOrder = async (req, res, next) => {
     try {
         const { amount } = req.body;
@@ -63,7 +61,6 @@ export const createWalletOrder = async (req, res, next) => {
     }
 };
 
-// Step 2 — Verify payment signature and credit wallet
 export const verifyWalletPayment = async (req, res, next) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
@@ -72,7 +69,6 @@ export const verifyWalletPayment = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Missing payment details" });
         }
 
-        // Verify signature
         const generatedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
             .update(razorpay_order_id + "|" + razorpay_payment_id)
@@ -82,7 +78,6 @@ export const verifyWalletPayment = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Payment verification failed" });
         }
 
-        // Check not already credited (idempotency)
         const existing = await Transaction.findOne({ razorpayPaymentId: razorpay_payment_id });
         if (existing) {
             const user = await User.findById(req.user._id);
@@ -109,7 +104,7 @@ export const verifyWalletPayment = async (req, res, next) => {
         await Notification.create({
             user: user._id,
             title: "Wallet Recharged",
-            message: `₹${creditAmount} added to your wallet via Razorpay.`,
+            message: `â‚¹${creditAmount} added to your wallet via Razorpay.`,
             type: "wallet"
         });
 
@@ -125,7 +120,6 @@ export const verifyWalletPayment = async (req, res, next) => {
     }
 };
 
-// Get wallet balance and transaction history
 export const getWalletData = async (req, res, next) => {
     try {
         const user = await User.findById(req.user._id);

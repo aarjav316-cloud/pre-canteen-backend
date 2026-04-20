@@ -37,7 +37,6 @@ export const protect = async (req, res, next) => {
     console.error("Auth middleware error:", error.message);
     console.error("Error name:", error.name);
 
-    // Set proper status code for auth errors
     if (
       error.name === "TokenExpiredError" ||
       error.name === "JsonWebTokenError" ||

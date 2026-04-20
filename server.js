@@ -44,15 +44,6 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(morgan("dev"));
 app.use(helmet());
-// Disabled mongoSanitize due to Express v5 compatibility issues
-// app.use(
-//   mongoSanitize({
-//     replaceWith: "_",
-//     onSanitize: ({ req, key }) => {
-//       console.warn(`Sanitized key: ${key}`);
-//     },
-//   }),
-// );
 
 
 app.use("/api/auth", authRoutes);
@@ -77,7 +68,7 @@ app.use((req, res, next) => {
 
 app.use(errorHandler);
 
-/* -------------------- HTTP + SOCKET -------------------- */
+
 
 const httpServer = http.createServer(app);
 
@@ -108,7 +99,7 @@ io.on("connection", (socket) => {
     logger.warn("Client disconnected: " + socket.id);
   });
 });
-/* -------------------- START SERVER SAFELY -------------------- */
+
 
 const startServer = async () => {
   try {

@@ -22,7 +22,6 @@ export const createOrder = async (req, res, next) => {
     const cartKey = `cart:${userId}`;
     const paymentMethod = req.body.paymentMethod; // "wallet" or "razorpay"
 
-    // Check if Canteen is Open
     const settings = await Settings.findOne();
     if (settings && settings.isOpen === false) {
       res.status(403);
@@ -34,7 +33,6 @@ export const createOrder = async (req, res, next) => {
       throw new Error("Invalid payment method. Use 'wallet' or 'razorpay'.");
     }
     
-    // Check existing order first to prevent duplicate active loops
     const existingOrder = await Order.findOne({
       user: userId,
       status: { $in: ["pending", "paid", "preparing", "ready"] },
@@ -46,7 +44,6 @@ export const createOrder = async (req, res, next) => {
 
     let inputItems = req.body.items || [];
     
-    // Fallback to Redis if req.body.items is omitted
     if (!inputItems || inputItems.length === 0) {
         const cartItems = await redisClient.hGetAll(cartKey);
         if (Object.keys(cartItems).length === 0) {
@@ -56,7 +53,6 @@ export const createOrder = async (req, res, next) => {
         inputItems = Object.keys(cartItems).map(id => ({ _id: id, quantity: Number(cartItems[id]) }));
     }
 
-    // Security: limit cart size and quantity
     if (inputItems.length > 20) {
       res.status(400);
       throw new Error("Too many items. Max 20 different items per order.");
@@ -103,7 +99,6 @@ export const createOrder = async (req, res, next) => {
     const plainPickUpCode = generatePickupCode();
     const hashedPickUpCode = await bcrypt.hash(plainPickUpCode, 10);
 
-    // ── WALLET PAYMENT ──
     if (paymentMethod === "wallet") {
       const user = await User.findById(userId);
       if (user.walletBalance < totalAmount) {
@@ -152,9 +147,7 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
-    // ── RAZORPAY PAYMENT ──
     if (paymentMethod === "razorpay") {
-      // Create order in pending_payment state (not yet confirmed)
       const order = await Order.create({
         user: userId,
         items: orderItems,
@@ -168,7 +161,6 @@ export const createOrder = async (req, res, next) => {
 
       await redisClient.del(cartKey);
 
-      // Create Razorpay order
       if (!razorpay) {
         res.status(500);
         throw new Error("Payment gateway not configured. Contact admin.");
@@ -211,7 +203,6 @@ export const updateOrderStatus = async (req, res, next) => {
       throw new Error("Order not found");
     }
 
-    // Validate status transitions
     const validTransitions = {
       pending: ["preparing", "cancelled"],
       preparing: ["ready", "cancelled"],
@@ -226,7 +217,6 @@ export const updateOrderStatus = async (req, res, next) => {
     order.status = status;
     await order.save();
 
-    // Include pickup code in ready notification
     let notifMessage = `Order #${order._id.toString().slice(-4).toUpperCase()} is now ${status}.`;
     if (status === "ready" && order.pickupCodePlain) {
        notifMessage = `Order #${order._id.toString().slice(-4).toUpperCase()} is ready! Pickup Code: ${order.pickupCodePlain}`;

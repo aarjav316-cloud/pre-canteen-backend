@@ -2,7 +2,6 @@ import Razorpay from "razorpay";
 
 let razorpay = null;
 
-// Only initialize Razorpay if valid credentials are provided
 if (
   process.env.RAZORPAY_KEY_ID &&
   process.env.RAZORPAY_KEY_ID !== "your_test_key" &&
@@ -13,9 +12,9 @@ if (
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
-  console.log("✓ Razorpay initialized");
+  console.log("âœ“ Razorpay initialized");
 } else {
-  console.warn("⚠ Razorpay not initialized - using placeholder credentials");
+  console.warn("âš  Razorpay not initialized - using placeholder credentials");
 }
 
 export default razorpay;

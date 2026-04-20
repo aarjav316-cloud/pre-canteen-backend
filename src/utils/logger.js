@@ -1,14 +1,14 @@
 const logger = {
     info: (message) => {
-        console.log(`🟢[INFO]: ${message}`)
+        console.log(`ðŸŸ¢[INFO]: ${message}`)
     },
 
     error: (message) => {
-        console.error(`🔴[ERROR]: ${message}`)
+        console.error(`ðŸ”´[ERROR]: ${message}`)
     },
 
     warn: (message) => {
-        console.warn(`🟡[WARN]: ${message}`)
+        console.warn(`ðŸŸ¡[WARN]: ${message}`)
     }
 };
 

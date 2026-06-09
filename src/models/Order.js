@@ -38,13 +38,22 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["wallet", "razorpay"],
+      enum: ["wallet", "razorpay", "counter"],
       required: true,
     },
 
     status: {
       type: String,
-      enum: ["pending_payment", "pending", "paid", "preparing", "ready", "completed", "cancelled"],
+      enum: [
+        "pending_payment",
+        "pending",
+        "paid",
+        "accepted",
+        "preparing",
+        "ready",
+        "completed",
+        "cancelled",
+      ],
       default: "pending",
       index: true,
     },
@@ -57,9 +66,24 @@ const orderSchema = new mongoose.Schema(
       type: String,
     },
 
+    razorpayRefundId: {
+      type: String,
+    },
+
     isPaid: {
       type: Boolean,
       default: false,
+    },
+
+    cancelledBy: {
+      type: String,
+      enum: ["student", "admin", "system"],
+      default: null,
+    },
+
+    cancellationReason: {
+      type: String,
+      default: null,
     },
   },
   { timestamps: true },

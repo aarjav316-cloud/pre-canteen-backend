@@ -6,10 +6,11 @@ import http from "http";
 import { Server } from "socket.io";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
-
+import passport from "passport";
 
 import connectDb from "./src/config/db.js";
 import { connectRedis } from "./src/config/redis.js";
+import "./src/config/passport.js"; // Initialize passport strategies
 
 import authRoutes from "./src/routes/authRoutes.js";
 import menuRoutes from "./src/routes/menuRoutes.js";
@@ -43,8 +44,14 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(morgan("dev"));
-app.use(helmet());
-
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disable for development to avoid blocking Razorpay
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false,
+  }),
+);
+app.use(passport.initialize());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/menu", menuRoutes);
@@ -67,8 +74,6 @@ app.use((req, res, next) => {
 });
 
 app.use(errorHandler);
-
-
 
 const httpServer = http.createServer(app);
 
@@ -99,7 +104,6 @@ io.on("connection", (socket) => {
     logger.warn("Client disconnected: " + socket.id);
   });
 });
-
 
 const startServer = async () => {
   try {
@@ -134,4 +138,4 @@ process.on("SIGTERM", () => {
     process.exit(0);
   });
 });
-
+// Nodemon restart trigger

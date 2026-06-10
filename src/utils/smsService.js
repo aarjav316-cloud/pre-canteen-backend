@@ -104,7 +104,14 @@ const sendViaTwilio = async (mobile, otp) => {
       sid: response.data.sid,
     };
   } catch (error) {
-    logger.error(`Twilio error: ${error.response?.data || error.message}`);
+    console.log("========== TWILIO ERROR ==========");
+    console.dir(error.response?.data, { depth: null });
+    console.log("==================================");
+
+    logger.error(
+      `Twilio error: ${JSON.stringify(error.response?.data, null, 2)}`,
+    );
+
     throw new Error("Failed to send SMS via Twilio");
   }
 };

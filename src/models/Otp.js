@@ -15,7 +15,7 @@ const otpSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false, // Not required for forgot password flow
     },
     otp: {
       type: String,
@@ -29,6 +29,21 @@ const otpSchema = new mongoose.Schema(
     lastSentAt: {
       type: Date,
       default: Date.now,
+    },
+    isForgotPassword: {
+      type: Boolean,
+      default: false,
+    },
+    isLogin: {
+      type: Boolean,
+      default: false,
+    },
+    verified: {
+      type: Boolean,
+      default: false,
+    },
+    verifiedAt: {
+      type: Date,
     },
   },
   { timestamps: true },

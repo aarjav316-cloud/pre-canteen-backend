@@ -13,6 +13,12 @@ import {
   resendOtp,
   sendLoginOtp,
 } from "../controllers/otpAuthController.js";
+import {
+  sendForgotPasswordOtp,
+  verifyForgotPasswordOtp,
+  resetPassword,
+  resendForgotPasswordOtp,
+} from "../controllers/forgotPasswordController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import {
   otpRateLimiter,
@@ -32,6 +38,20 @@ router.post("/send-otp", otpRateLimiter, sendLoginOtp); // Send OTP for login
 
 // ── Password-based Login (Legacy/Staff) ─────────────────
 router.post("/login", login);
+
+// ── Forgot Password Flow ────────────────────────────────
+router.post("/forgot-password/send-otp", otpRateLimiter, sendForgotPasswordOtp);
+router.post(
+  "/forgot-password/verify-otp",
+  verifyOtpRateLimiter,
+  verifyForgotPasswordOtp,
+);
+router.post("/forgot-password/reset", verifyOtpRateLimiter, resetPassword);
+router.post(
+  "/forgot-password/resend-otp",
+  otpRateLimiter,
+  resendForgotPasswordOtp,
+);
 
 // ── Google OAuth ────────────────────────────────────────
 router.get(

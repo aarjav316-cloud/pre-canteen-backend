@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema(
     },
     college: {
       type: String,
-      default: "Medicaps University",
+      default: "MEDICAPS UNIVERSITY",
       immutable: true, // Cannot be changed after creation
     },
 

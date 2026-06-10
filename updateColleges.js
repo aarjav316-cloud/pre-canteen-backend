@@ -19,10 +19,10 @@ const updateColleges = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ Connected to MongoDB\n");
 
-    // Update all users to have Medicaps University
+    // Update all users to have MEDICAPS UNIVERSITY
     const result = await User.updateMany(
       {},
-      { $set: { college: "Medicaps University" } },
+      { $set: { college: "MEDICAPS UNIVERSITY" } },
     );
 
     console.log("✅ College updated successfully!");

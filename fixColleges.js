@@ -22,7 +22,7 @@ const fixColleges = async () => {
     const result = await usersCollection.updateMany(
       {},
       {
-        $set: { college: "Medicaps University" },
+        $set: { college: "MEDICAPS UNIVERSITY" },
       },
     );
 

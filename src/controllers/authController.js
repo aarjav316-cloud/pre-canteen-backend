@@ -110,7 +110,6 @@ export const updateProfile = async (req, res, next) => {
       currentPassword,
       newPassword,
       dp,
-      college,
       mobile,
       notificationPreferences,
       refundPreference,
@@ -118,7 +117,7 @@ export const updateProfile = async (req, res, next) => {
 
     if (name !== undefined) user.name = name;
     if (dp !== undefined) user.dp = dp;
-    if (college !== undefined) user.college = college;
+    // College field is immutable - cannot be updated
     if (mobile !== undefined) user.mobile = mobile;
 
     if (notificationPreferences !== undefined) {
